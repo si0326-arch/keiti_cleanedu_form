@@ -1,11 +1,8 @@
 // 정적 데이터 및 비즈니스 로직 (KEITI 청렴 교육용 신고서 작성 체험)
 // 원본 빌드 산출물에서 추출 — 내용 무수정.
 
-// 작성 완료/설문 제출 시 데이터를 저장할 Google Apps Script 엔드포인트
-// Vite 환경변수에서 주입 (VITE_ 접두어만 클라이언트에 노출됨 → .env / Vercel 환경변수).
-// 미설정 시 "YOUR_"로 시작하는 값이 되어 App 이 실제 전송 대신 제출 시뮬레이션 모드로 동작한다.
-export const GOOGLE_SCRIPT_URL =
-  import.meta.env.VITE_GOOGLE_SCRIPT_URL || "YOUR_SCRIPT_URL_NOT_SET";
+// 설문 문항 버전. 설문 항목을 바꾸면 이 값을 올린다(저장 데이터에 기록되어 버전 구분).
+export const SURVEY_VERSION = "v1";
 
 // 소속 처·단 목록 (id, 부서명, 1순위 부패위험)
 export const DEPARTMENTS = [

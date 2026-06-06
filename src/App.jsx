@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
+import { supabase } from "./supabaseClient";
 import {
-  GOOGLE_SCRIPT_URL,
   DEPARTMENTS,
   FORMS,
   STEPS,
@@ -9,6 +9,7 @@ import {
   LAW_TOPICS,
   EXPERIENCE_TOPICS,
   REQUIRED_SURVEY_IDS,
+  SURVEY_VERSION,
   getFormRecommendations,
 } from "./data";
 
@@ -61,65 +62,73 @@ export default function App() {
     goNext();
   };
 
-  // 설문까지 마친 뒤 최종 제출: 신고 내용 + 설문 응답을 모아 Google Sheet로 전송
+  // 설문까지 마친 뒤 최종 제출: 신고 내용 + 설문 응답을 Supabase 에 저장
   const handleSubmit = async () => {
+    if (!supabase) {
+      setSubmitError("DB 설정이 누락되었습니다. 관리자에게 문의해주세요.");
+      return;
+    }
     setSubmitting(true);
     setSubmitError("");
 
-    // 신고 항목 값: 직접 입력이 있으면 우선, 없으면 작성예시를 사용
-    const values = {};
+    // 신고서 답변: 직접 입력이 있으면 우선, 없으면 작성예시. 항목 라벨도 함께 저장(자기설명).
+    const report = {};
     if (form) {
       form.fields.forEach((field) => {
         const userInput = (formValues[field.id] || "").trim();
         const example = selectedScenario.examples[field.id] || "";
-        values[field.id] = userInput || example;
+        report[field.id] = { label: field.label, value: userInput || example };
       });
     }
 
-    // 설문 응답: 강사 만족도 + 법령/체험 항목의 전·후 점수와 그 차이(diff) + 주관식
-    const survey = {};
-    INSTRUCTOR_QUESTIONS.forEach((q) => {
-      survey[q.id] = surveyAnswers[q.id] ?? "";
-    });
-    [...LAW_TOPICS, ...EXPERIENCE_TOPICS].forEach((topic) => {
-      const before = surveyAnswers[`${topic.id}_before`];
-      const after = surveyAnswers[`${topic.id}_after`];
-      survey[`${topic.id}_before`] = before ?? "";
-      survey[`${topic.id}_after`] = after ?? "";
-      survey[`${topic.id}_diff`] = before && after ? after - before : "";
-    });
-    survey.d1_useful = surveyAnswers.d1_useful || "";
-    survey.d2_improve = surveyAnswers.d2_improve || "";
+    // 설문 응답: 질문 텍스트와 함께 저장(자기설명) → 문항이 바뀌어도 과거 응답을 해석 가능
+    const scoredTopic = (t) => {
+      const before = surveyAnswers[`${t.id}_before`] ?? null;
+      const after = surveyAnswers[`${t.id}_after`] ?? null;
+      return {
+        id: t.id,
+        label: t.label,
+        sub: t.sub,
+        before,
+        after,
+        diff: before != null && after != null ? after - before : null,
+      };
+    };
+    const survey = {
+      instructor: INSTRUCTOR_QUESTIONS.map((q) => ({
+        id: q.id,
+        question: q.text,
+        value: surveyAnswers[q.id] ?? null,
+      })),
+      law: LAW_TOPICS.map(scoredTopic),
+      experience: EXPERIENCE_TOPICS.map(scoredTopic),
+      feedback: {
+        d1_useful: surveyAnswers.d1_useful || "",
+        d2_improve: surveyAnswers.d2_improve || "",
+      },
+    };
 
-    const payload = {
-      empId,
+    const row = {
+      emp_id: empId,
       name,
-      deptId,
-      deptName: deptName || "",
-      formId: resolvedFormId,
-      formName: form?.name || "",
-      scenarioId: selectedScenario?.id || "",
-      scenarioTitle: selectedScenario?.title || "",
-      values,
+      dept_id: deptId,
+      dept_name: deptName || "",
+      form_id: resolvedFormId,
+      form_name: form?.name || "",
+      scenario_id: selectedScenario?.id || "",
+      scenario_title: selectedScenario?.title || "",
+      survey_version: SURVEY_VERSION,
+      report,
       survey,
-      submittedAt: new Date().toISOString(),
+      submitted_at: new Date().toISOString(),
     };
 
     try {
-      if (GOOGLE_SCRIPT_URL.startsWith("YOUR_")) {
-        // 엔드포인트가 미설정이면 콘솔에 찍고 제출을 흉내만 낸다.
-        console.log("[제출 시뮬레이션]", payload);
-        await new Promise((resolve) => setTimeout(resolve, 800));
-      } else {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          body: JSON.stringify(payload),
-          headers: { "Content-Type": "text/plain" },
-        });
-      }
+      const { error } = await supabase.from("submissions").insert(row);
+      if (error) throw error;
       goNext();
-    } catch {
+    } catch (e) {
+      console.error("[제출 실패]", e);
       setSubmitError("제출 중 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setSubmitting(false);

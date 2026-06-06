@@ -1,38 +1,53 @@
 // 마이그레이션 실행기
-//  접속 정보 우선순위: 1) 환경변수 DATABASE_URL  2) 로컬 비밀 파일 .env.migration 의 MIGRATION_DATABASE_URL
-//  ⚠️ 접속 문자열(비밀번호 포함)은 코드에 하드코딩하지 않는다. .env.migration 은 .gitignore 처리됨.
+//  접속 정보: 로컬 비밀 파일 .env.migration 에서 읽음 (gitignore됨, 코드/깃에 비밀 없음).
+//   - 권장: PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE  (비번을 따로 둬서 특수문자 인코딩 불필요)
+//   - 대체: MIGRATION_DATABASE_URL=postgresql://...  /  환경변수 DATABASE_URL
 //  사용법: node scripts/run-migration.mjs <sql파일경로>
 import { readFileSync } from 'node:fs';
 import pg from 'pg';
 
-function loadConnString() {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+function loadEnvFile() {
+  const out = {};
   try {
     const txt = readFileSync(new URL('../.env.migration', import.meta.url), 'utf8');
     for (const line of txt.split(/\r?\n/)) {
-      const m = line.match(/^\s*MIGRATION_DATABASE_URL\s*=\s*(.+?)\s*$/);
-      if (m) return m[1];
+      if (/^\s*#/.test(line) || !line.includes('=')) continue;
+      const i = line.indexOf('=');
+      out[line.slice(0, i).trim()] = line.slice(i + 1).trim();
     }
   } catch {
     /* 파일 없으면 무시 */
   }
-  return null;
+  return out;
 }
 
-const url = loadConnString();
+const env = loadEnvFile();
 const sqlPath = process.argv[2];
-
 if (!sqlPath) {
   console.error('❌ 사용법: node scripts/run-migration.mjs <sql파일>');
   process.exit(1);
 }
-if (!url) {
-  console.error('❌ 접속 정보 없음 — .env.migration 의 MIGRATION_DATABASE_URL 을 확인하세요.');
+
+let config;
+if (env.PGHOST && env.PGPASSWORD) {
+  // 권장 방식: 비밀번호를 URL 인코딩 없이 그대로 전달
+  config = {
+    host: env.PGHOST,
+    port: Number(env.PGPORT || 5432),
+    user: env.PGUSER,
+    password: env.PGPASSWORD,
+    database: env.PGDATABASE || 'postgres',
+  };
+} else if (process.env.DATABASE_URL || env.MIGRATION_DATABASE_URL) {
+  config = { connectionString: process.env.DATABASE_URL || env.MIGRATION_DATABASE_URL };
+} else {
+  console.error('❌ 접속 정보 없음 — .env.migration 의 PGPASSWORD 등을 확인하세요.');
   process.exit(1);
 }
+config.ssl = { rejectUnauthorized: false };
 
 const sql = readFileSync(sqlPath, 'utf8');
-const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+const client = new pg.Client(config);
 
 try {
   await client.connect();

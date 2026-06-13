@@ -3,6 +3,20 @@
 KEITI 청렴 교육용 신고서 작성 체험 (Vite + React).
 데이터 백엔드: **Supabase** (테이블 `public.submissions`). 호스팅: Vercel (main push 시 자동 배포). 소스: GitHub.
 
+## 페이지 구성 (멀티페이지)
+- `/` — 참여자용 신고서 작성·설문 제출 (`index.html` → `src/main.jsx` → `src/App.jsx`). anon 키로 INSERT.
+- `/admin` — **관리자 결과 대시보드** (`admin.html` → `src/admin/main.jsx` → `src/admin/AdminApp.jsx`).
+  설문 전·후 비교 통계 / 강사 만족도 / 주관식 응답 / CSV 다운로드.
+
+## 관리자 대시보드 데이터 흐름 (중요)
+`submissions` 는 RLS로 **anon 에 INSERT만** 허용 → 브라우저 anon 키로는 읽기 불가(개인정보 보호).
+그래서 대시보드는 **서버리스 함수 `api/submissions.js`** 가 `service_role` 키로 RLS를 우회해 읽고,
+**관리자 비밀번호**로 접근을 잠근다. 비밀번호·service_role 키는 **서버 환경변수에만** 둔다.
+
+서버 전용 환경변수 (Vercel > Environment Variables, 로컬은 `vercel dev` + `.env`):
+- `SUPABASE_URL` (VITE_ 없음), `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_PASSWORD`
+- ⚠️ 위 셋은 절대 `VITE_` 접두어를 붙이지 말 것(붙이면 브라우저 번들에 노출됨).
+
 ---
 
 ## 🔒 DB 변경 규칙 (STRICT — 반드시 지킬 것)

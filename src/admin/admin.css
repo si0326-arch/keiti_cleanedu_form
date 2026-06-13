@@ -510,3 +510,234 @@ body {
     grid-template-columns: 90px 1fr 28px;
   }
 }
+
+/* ════════ 추가 기능 스타일 (% 향상률 · 기간조회 · 키워드 군집) ════════ */
+
+/* KPI 보조(%) */
+.kpi-value {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+.kpi-sub {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--up);
+}
+
+/* 전·후 비교: 향상점수 + 향상률(%) 박스 */
+.ba-row {
+  grid-template-columns: 170px 1fr 78px;
+}
+.ba-diffbox {
+  text-align: center;
+  line-height: 1.2;
+}
+.ba-diff {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ba-pct {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.ba-diff.up,
+.ba-pct.up {
+  color: var(--up);
+}
+.ba-diff.down,
+.ba-pct.down {
+  color: var(--down);
+}
+.ba-diff.flat,
+.ba-pct.flat {
+  color: var(--muted);
+}
+
+/* 기간 조회 패널 */
+.filter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.date-input {
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink);
+}
+.date-input:focus {
+  outline: none;
+  border-color: var(--after);
+}
+.date-sep {
+  color: var(--muted);
+}
+.btn-reset {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--navy);
+}
+.btn-reset:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.filter-status {
+  margin: 12px 0 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.filter-status strong {
+  color: var(--ink);
+}
+
+/* 일자별 막대 차트 */
+.daily-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.daily-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 2px;
+  border-radius: 8px;
+  min-width: 40px;
+  transition: background 0.15s;
+}
+.daily-bar:hover {
+  background: #eef2f8;
+}
+.daily-bar.dim {
+  opacity: 0.3;
+}
+.daily-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.daily-fill {
+  width: 22px;
+  background: linear-gradient(180deg, #3b82f6, #1e3a5f);
+  border-radius: 5px 5px 0 0;
+}
+.daily-label {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* 주관식: 키워드 군집 */
+.fb-total {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.kw-box {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.kw-box-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.kw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kw-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.kw-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(37, 99, 235, 0.1);
+  z-index: 0;
+}
+.kw-word,
+.kw-count {
+  position: relative;
+  z-index: 1;
+}
+.kw-word {
+  font-weight: 600;
+  color: var(--ink);
+}
+.kw-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--after);
+  font-weight: 700;
+}
+.kw-chip.active {
+  border-color: var(--after);
+  background: #eff5ff;
+}
+.kw-chip.active .kw-word {
+  color: var(--after);
+}
+.fb-filter-status {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.fb-filter-status strong {
+  color: var(--after);
+}
+.fb-clear {
+  border: none;
+  background: none;
+  color: var(--after);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0 2px;
+}
+
+@media (max-width: 760px) {
+  .ba-row {
+    grid-template-columns: 100px 1fr 64px;
+  }
+}

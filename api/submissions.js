@@ -26,8 +26,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // 환경변수 값에 실수로 끼어든 공백/개행 제거 (URL·키엔 공백이 없어야 함).
+  // 예: 붙여넣기 중 "supaba se.co" 처럼 도메인에 공백이 들어가면 fetch가 깨진다.
+  const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").replace(/\s/g, "");
+  const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").replace(/\s/g, "");
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
   if (!SUPABASE_URL || !SERVICE_KEY || !ADMIN_PASSWORD) {
